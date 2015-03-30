@@ -2,13 +2,13 @@
   "name": "redis-spawn",
   "description": "Redis in spawn mode",
   "version": "0.0.1",
-  "devDependencies": {
-
-  },
+  "devDependencies": {},
   "homepage": "https://github.com/laoshanlung/redis-spawn",
   "keywords": [
-    "cache",
-    "redis"
+    "redis cluster",
+    "redis",
+    "redis shard",
+    "mutil redis"
   ],
   "author": {
     "name": "Tan Nguyen",
@@ -19,6 +19,8 @@
     "url": "https://github.com/laoshanlung/redis-spawn.git"
   },
   "dependencies": {
-
+    "hashring": "^3.1.0",
+    "redis": "^0.12.1",
+    "underscore": "^1.8.2"
   }
 }
