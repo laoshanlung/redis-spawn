@@ -1,0 +1,24 @@
+{
+  "name": "redis-spawn",
+  "description": "Redis in spawn mode",
+  "version": "0.0.1",
+  "devDependencies": {
+
+  },
+  "homepage": "https://github.com/laoshanlung/redis-spawn",
+  "keywords": [
+    "cache",
+    "redis"
+  ],
+  "author": {
+    "name": "Tan Nguyen",
+    "email": "laoshanlung@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laoshanlung/redis-spawn.git"
+  },
+  "dependencies": {
+
+  }
+}
