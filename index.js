@@ -120,7 +120,7 @@ _.extend(Manager.prototype, {
     }.bind(this);
   },
 
-  getInstance: function(key, promise) {
+  get: function(key, promise) {
     var instance = this._hashRing.get(key);
     if (promise) {
       return this._promiseInstances[instance];
@@ -128,7 +128,7 @@ _.extend(Manager.prototype, {
     return this._instances[instance];
   },
 
-  eachInstance: function(cb, promise) {
+  each: function(cb, promise) {
     var instances = this._instances;
     if (promise) {
       instances = this._promiseInstances;
