@@ -3,11 +3,60 @@ var redis = require('redis')
   , debug =require('debug')('redis-spawn')
   , _ = require('underscore')
   , EventEmitter = require('events').EventEmitter
-  , util = require('util');
+  , util = require('util')
+  , when = require('when')
+
+var redisBindFunction = function(client, op) {
+  return function() {
+    var deferred = when.defer();
+    var args = _.values(arguments);
+    args.push(function(){
+      if (arguments[0]) {
+        deferred.reject(arguments[0]);
+      } else {
+        deferred.resolve(arguments[1]);
+      }
+    });
+    client[op].apply(client, args);
+    return deferred.promise;
+  }
+}
+
+// From https://gist.github.com/tobiash/2884566 and modify to use when 
+var liftOps = function(client) {
+  var functions, lc, op, ops, p, _i, _len;
+  functions = _.functions(client);
+  ops = functions.filter(function(f) {
+    return f.toUpperCase() === f;
+  });
+  lc = (function() {
+    var _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = ops.length; _i < _len; _i++) {
+      op = ops[_i];
+      _results.push(op.toLowerCase());
+    }
+    return _results;
+  })();
+  ops = ops.concat(lc);
+  p = {};
+  for (_i = 0, _len = ops.length; _i < _len; _i++) {
+    op = ops[_i];
+    p[op] = redisBindFunction(client, op);
+  }
+  p["multi"] = p["MULTI"] = function() {
+    var m;
+    m = client.multi.call(client, arguments);
+    m.exec = redisBindFunction(m, 'exec');
+    return m;
+  };
+  return p;
+};
 
 var Manager = function(cluster) {
   this.cluster = cluster;
-  this._redisInstances = {};
+  this._instances = {};
+  this._promiseInstances = {};
 
   var ringKeys = {};
 
@@ -21,7 +70,7 @@ var Manager = function(cluster) {
       config.auth_pass = config.password;
     }
 
-    if (!this._redisInstances[key]) {
+    if (!this._instances[key]) {
       var client = redis.createClient(config.port, config.host, config);
 
       client.on('connect', this._onClientConnect.bind(this, config));
@@ -31,7 +80,9 @@ var Manager = function(cluster) {
         client.select(config.database);
       }
 
-      this._redisInstances[key] = client;
+      this._instances[key] = client;
+      this._promiseInstances[key] = liftOps(client);
+      this._promiseInstances[key]._original = client;
     }
 
     ringKeys[key] = weight;
@@ -55,7 +106,7 @@ _.extend(Manager.prototype, {
         _param[key] = config.weight || 1;
         this._hashRing.add(_param);
       }
-    }
+    }.bind(this);
   },
 
   _onClientError: function(config) {
@@ -66,17 +117,24 @@ _.extend(Manager.prototype, {
       if (this._hashRing.has(key)) {
         this._hashRing.remove(key);
       } 
+    }.bind(this);
+  },
+
+  getInstance: function(key, promise) {
+    var instance = this._hashRing.get(key);
+    if (promise) {
+      return this._promiseInstances[instance];
     }
+    return this._instances[instance];
   },
 
-  getInstance: function(key) {
-    var instance = this._hashRing.get(key)
+  eachInstance: function(cb, promise) {
+    var instances = this._instances;
+    if (promise) {
+      instances = this._promiseInstances;
+    }
 
-    return this._redisInstances[instance];
-  },
-
-  eachInstance: function(cb) {
-    _.each(this._redisInstances, function(instance){
+    _.each(instances, function(instance){
       cb(instance)
     });
   }
