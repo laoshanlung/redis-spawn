@@ -1,7 +1,7 @@
 {
   "name": "redis-spawn",
   "description": "Redis in spawn mode",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "devDependencies": {},
   "homepage": "https://github.com/laoshanlung/redis-spawn",
   "keywords": [
